@@ -2,18 +2,18 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Gemini API Key Tester</title>
+  <title>Gemini Classifier Tester</title>
   <style>
     body { background: #08080f; color: #e6e6f0; font-family: system-ui, sans-serif; max-width: 600px; margin: 60px auto; padding: 0 20px; }
     h2 { font-size: 18px; margin-bottom: 4px; }
     p  { color: #5a5a78; font-size: 13px; margin-bottom: 24px; }
     label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: #5a5a78; }
-    input, select {
+    input {
       display: block; width: 100%; margin: 6px 0 16px;
       background: #0e0e1a; border: 1px solid #1a1a2c; border-radius: 8px;
       color: #e6e6f0; padding: 10px 12px; font-size: 14px; outline: none;
     }
-    input:focus, select:focus { border-color: #1D9E75; }
+    input:focus { border-color: #1D9E75; }
     button {
       background: #1D9E75; color: #fff; border: none; border-radius: 8px;
       padding: 11px 22px; font-size: 14px; font-weight: 600; cursor: pointer;
@@ -35,11 +35,11 @@
   </style>
 </head>
 <body>
-  <h2>🔑 Gemini API Key Tester</h2>
-  <p>Tests your key using the exact same prompt the extension sends.</p>
+  <h2>Gemini Classifier Tester</h2>
+  <p>Tests the Netlify classification endpoint the extension now uses. No API key is exposed in this page.</p>
 
-  <label>API Key</label>
-  <input id="key" type="password" placeholder="Paste your Gemini API key here" />
+  <label>API Base URL</label>
+  <input id="baseUrl" />
 
   <label>Test URL</label>
   <input id="url" value="https://www.youtube.com/watch?v=dQw4w9WgXcQ" />
@@ -58,88 +58,64 @@
       productivity: '#378ADD', news: '#EF9F27', other: '#7a7a8a',
     };
 
+    function defaultBaseUrl() {
+      if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
+        return window.location.origin;
+      }
+      return 'http://localhost:8888';
+    }
+
+    document.getElementById('baseUrl').value = defaultBaseUrl();
+
     async function runTest() {
-      const key   = document.getElementById('key').value.trim();
-      const url   = document.getElementById('url').value.trim();
+      const baseUrl = document.getElementById('baseUrl').value.trim().replace(/\/+$/, '');
+      const url = document.getElementById('url').value.trim();
       const title = document.getElementById('title').value.trim();
-      const btn   = document.getElementById('btn');
+      const btn = document.getElementById('btn');
       const result = document.getElementById('result');
 
-      if (!key) { alert('Paste your API key first.'); return; }
+      if (!baseUrl) { alert('Enter the API base URL first.'); return; }
 
       btn.disabled = true;
-      btn.textContent = 'Testing…';
+      btn.textContent = 'Testing...';
       result.style.display = 'none';
 
-      const prompt = `Classify this website into exactly one category.
-URL: ${url}
-Title: ${title}
-
-Categories: learning, entertainment, social media, productivity, news, other
-
-Rules:
-- "learning" = tutorials, courses, documentation, educational videos, Wikipedia
-- "entertainment" = YouTube (non-educational), Netflix, gaming, memes
-- "social media" = Twitter/X, Instagram, Reddit, Facebook, TikTok, LinkedIn
-- "productivity" = email, coding, Google Docs, project management tools
-- "news" = news articles, journalism, blogs about current events
-- "other" = anything that doesn't fit above
-
-Reply with only the category word, nothing else.`;
-
       try {
-        const t0  = Date.now();
-        const res = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: prompt }] }],
-              generationConfig: { temperature: 0, maxOutputTokens: 1024 },
-            }),
-          }
-        );
-        const ms   = Date.now() - t0;
+        const t0 = Date.now();
+        const res = await fetch(`${baseUrl}/api/classify`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url, title }),
+        });
+        const ms = Date.now() - t0;
         const data = await res.json();
 
         if (!res.ok) {
-          result.innerHTML = `<div class="fail">✗ API error ${res.status}</div><pre>${JSON.stringify(data, null, 2)}</pre>`;
+          result.innerHTML = `<div class="fail">x API error ${res.status}</div><pre>${JSON.stringify(data, null, 2)}</pre>`;
           result.style.display = 'block';
           return;
         }
 
-        // gemini-2.5-flash is a thinking model — skip thought parts, use the answer part
-        const parts      = data?.candidates?.[0]?.content?.parts ?? [];
-        const answerPart = parts.find(p => !p.thought) ?? parts[parts.length - 1];
-        const raw        = (answerPart?.text ?? '').trim().toLowerCase();
-        const match      = VALID_CATEGORIES.find(c => raw.includes(c)) ?? 'other';
-        const color      = CAT_COLOR[match];
-
-        const allParts = parts.map((p, i) => ({
-          index:   i,
-          thought: p.thought ?? false,
-          text:    (p.text ?? '').substring(0, 300) + (p.text?.length > 300 ? '…' : ''),
-        }));
+        const raw = (data?.raw ?? '').trim().toLowerCase();
+        const match = VALID_CATEGORIES.find(c => c === data?.category) ?? 'other';
+        const color = CAT_COLOR[match];
 
         result.innerHTML = `
           <div class="label-row">
-            <span class="ok">✓ Key works</span>
-            <span style="color:#5a5a78;font-size:12px">${ms}ms · ${parts.length} part(s) in response</span>
+            <span class="ok">OK Endpoint works</span>
+            <span style="color:#5a5a78;font-size:12px">${ms}ms · ${data?.model ?? 'unknown model'}</span>
           </div>
           <div class="label-row">
             <span style="color:#5a5a78;font-size:13px">Result:</span>
             <span class="cat-badge" style="background:${color}22;color:${color}">${match}</span>
           </div>
-          <div style="color:#5a5a78;font-size:12px;margin:8px 0 4px">Answer part text: <em style="color:#9090b0">"${raw}"</em></div>
-          <div style="color:#5a5a78;font-size:11px;margin-bottom:6px">All parts:</div>
-          <pre>${JSON.stringify(allParts, null, 2)}</pre>
-          <div style="color:#5a5a78;font-size:11px;margin:8px 0 4px">Token usage:</div>
-          <pre>${JSON.stringify(data?.usageMetadata ?? {}, null, 2)}</pre>`;
+          <div style="color:#5a5a78;font-size:12px;margin:8px 0 4px">Model text: <em style="color:#9090b0">"${raw}"</em></div>
+          <div style="color:#5a5a78;font-size:11px;margin:8px 0 4px">Response:</div>
+          <pre>${JSON.stringify(data, null, 2)}</pre>`;
         result.style.display = 'block';
 
       } catch (err) {
-        result.innerHTML = `<div class="fail">✗ Network error</div><pre>${err.message}</pre>`;
+        result.innerHTML = `<div class="fail">x Network error</div><pre>${err.message}</pre>`;
         result.style.display = 'block';
       } finally {
         btn.disabled = false;

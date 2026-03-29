@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MindMap</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #07111a;
+      --panel: rgba(8, 18, 28, 0.82);
+      --panel-border: rgba(116, 160, 188, 0.18);
+      --text: #eaf4ff;
+      --muted: #8ba6bc;
+      --accent: #1eb980;
+      --accent-2: #5bbcff;
+    }
+
+    body {
+      min-height: 100vh;
+      font-family: Georgia, "Times New Roman", serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(91, 188, 255, 0.18), transparent 35%),
+        radial-gradient(circle at bottom right, rgba(30, 185, 128, 0.18), transparent 30%),
+        linear-gradient(160deg, #02070b 0%, #07111a 52%, #0f1b24 100%);
+      display: grid;
+      place-items: center;
+      padding: 32px 20px;
+    }
+
+    main {
+      width: min(980px, 100%);
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      border-radius: 28px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
+      overflow: hidden;
+    }
+
+    .hero {
+      padding: 56px 28px 32px;
+      text-align: center;
+      border-bottom: 1px solid rgba(116, 160, 188, 0.12);
+    }
+
+    .eyebrow {
+      display: inline-block;
+      font: 600 12px/1.2 system-ui, sans-serif;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      font-size: clamp(2.6rem, 7vw, 5rem);
+      line-height: 0.95;
+      letter-spacing: -0.04em;
+      margin-bottom: 18px;
+    }
+
+    .hero p {
+      max-width: 650px;
+      margin: 0 auto;
+      color: var(--muted);
+      font: 500 1rem/1.7 system-ui, sans-serif;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      padding: 28px;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(116, 160, 188, 0.14);
+      border-radius: 22px;
+      padding: 24px;
+      min-height: 220px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .card small {
+      color: var(--accent-2);
+      font: 700 11px/1.2 system-ui, sans-serif;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .card h2 {
+      font-size: 1.8rem;
+      margin: 14px 0 10px;
+      letter-spacing: -0.03em;
+    }
+
+    .card p {
+      color: var(--muted);
+      font: 500 0.96rem/1.6 system-ui, sans-serif;
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 22px;
+    }
+
+    a.button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 0 18px;
+      border-radius: 999px;
+      text-decoration: none;
+      font: 700 0.95rem/1 system-ui, sans-serif;
+      transition: transform 0.18s ease, opacity 0.18s ease, background 0.18s ease;
+    }
+
+    a.button:hover {
+      transform: translateY(-1px);
+      opacity: 0.96;
+    }
+
+    .primary {
+      background: linear-gradient(135deg, var(--accent), #2ed39b);
+      color: #03110c;
+    }
+
+    .secondary {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .note {
+      padding: 0 28px 28px;
+      color: var(--muted);
+      font: 500 0.92rem/1.7 system-ui, sans-serif;
+    }
+
+    code {
+      font-family: Consolas, monospace;
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.06);
+      padding: 2px 7px;
+      border-radius: 999px;
+    }
+
+    @media (max-width: 860px) {
+      .grid { grid-template-columns: 1fr; }
+      .hero { padding: 42px 22px 26px; }
+      .grid, .note { padding-left: 22px; padding-right: 22px; }
+      .card { min-height: 0; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="hero">
+      <div class="eyebrow">MindMap</div>
+      <h1>Your attention, mapped.</h1>
+      <p>
+        Dashboard and AR experience for MindMap. Configure The browser extension
+        which runs separately and sends the browsing data that powers both views.
+      </p>
+    </section>
+
+    <section class="grid">
+      <article class="card">
+        <div>
+          <small>Analytics</small>
+          <h2>Dashboard</h2>
+          <p>See category breakdowns, trends, top sites, heatmaps, and your current brain score.</p>
+        </div>
+        <div class="actions">
+          <a class="button primary" href="/dashboard/">Open Dashboard</a>
+        </div>
+      </article>
+
+      <article class="card">
+        <div>
+          <small>Immersive</small>
+          <h2>AR Brain</h2>
+          <p>Launch the camera-based brain visualization. This works best on a phone browser.</p>
+        </div>
+        <div class="actions">
+          <a class="button primary" href="/ar/">Open AR</a>
+        </div>
+      </article>
+
+      <article class="card">
+        <div>
+          <small>Extension</small>
+          <h2>Tracker</h2>
+          <p>Netlify does not host the Chrome extension runtime. Load the <code>/extension</code> folder separately in Chrome.</p>
+        </div>
+        <div class="actions">
+          <a class="button secondary" href="/dashboard/test-gemini.html">Test Gemini Key</a>
+        </div>
+      </article>
+    </section>
+
+    <div class="note">
+      Netlify does not host the Chrome extension runtime. Load the extension separately in Chrome.
+    </div>
+  </main>
+</body>
+</html>

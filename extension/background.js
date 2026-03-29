@@ -1,4 +1,8 @@
-importScripts("config.js"); // defines GEMINI_API_KEY
+try {
+  importScripts("config.js"); // optional public API base URL for the extension
+} catch (_) {
+  // config.js is optional; localhost is used by default for local development.
+}
 
 const SUPABASE_URL = "https://sagbrkjfdqxqndrfekkp.supabase.co";
 const SUPABASE_KEY =
@@ -13,12 +17,25 @@ const VALID_CATEGORIES = [
   "other",
 ];
 
-// ─── In-memory state ────────────────────────────────────────────────────────
+const DEFAULT_API_BASE_URL = "http://localhost:8888";
+
+function getApiBaseUrl() {
+  if (
+    typeof MINDMAP_API_BASE_URL === "string" &&
+    MINDMAP_API_BASE_URL.trim().length > 0
+  ) {
+    return MINDMAP_API_BASE_URL.trim().replace(/\/+$/, "");
+  }
+
+  return DEFAULT_API_BASE_URL;
+}
+
+// In-memory state
 let activeTabId = null;
 let activeStartTime = null;
-const tabEventMap = {}; // tabId → supabase event id
+const tabEventMap = {}; // tabId -> supabase event id
 
-// ─── Auth ────────────────────────────────────────────────────────────────────
+// Auth
 async function getOrCreateSession() {
   const stored = await chrome.storage.local.get("supabase_session");
   if (stored.supabase_session) return stored.supabase_session;
@@ -37,23 +54,25 @@ async function getOrCreateSession() {
   return data;
 }
 
-// ─── Local keyword fallback (used when Gemini API is unavailable) ────────────
+// Local keyword fallback used when the classification endpoint is unavailable.
 function classifyLocally(url, title) {
   let domain = "";
-  try { domain = new URL(url).hostname.replace(/^www\./, ""); } catch (_) {}
+  try {
+    domain = new URL(url).hostname.replace(/^www\./, "");
+  } catch (_) {}
   const text = (domain + " " + title).toLowerCase();
 
   const SOCIAL = /\b(twitter\.com|x\.com|instagram\.com|facebook\.com|tiktok\.com|linkedin\.com|reddit\.com|snapchat\.com|pinterest\.com|threads\.net)\b/;
-  const NEWS   = /\b(bbc\.(co\.uk|com)|cnn\.com|nytimes\.com|reuters\.com|theguardian\.com|washingtonpost\.com|bloomberg\.com|apnews\.com|aljazeera\.com|techcrunch\.com|theverge\.com|wired\.com)\b/;
-  const LEARN  = /\b(wikipedia\.org|stackoverflow\.com|github\.com|docs\.|coursera\.org|udemy\.com|khanacademy\.org|edx\.org|medium\.com|dev\.to|freecodecamp\.org|w3schools\.com|mdn\b|developer\.|learn\.|education)\b/;
-  const PROD   = /\b(gmail\.com|notion\.so|slack\.com|jira\.|linear\.app|figma\.com|docs\.google\.com|sheets\.google\.com|trello\.com|asana\.com|calendar\.google\.com|outlook\.(com|office\.com))\b/;
+  const NEWS = /\b(bbc\.(co\.uk|com)|cnn\.com|nytimes\.com|reuters\.com|theguardian\.com|washingtonpost\.com|bloomberg\.com|apnews\.com|aljazeera\.com|techcrunch\.com|theverge\.com|wired\.com)\b/;
+  const LEARN = /\b(wikipedia\.org|stackoverflow\.com|github\.com|docs\.|coursera\.org|udemy\.com|khanacademy\.org|edx\.org|medium\.com|dev\.to|freecodecamp\.org|w3schools\.com|mdn\b|developer\.|learn\.|education)\b/;
+  const PROD = /\b(gmail\.com|notion\.so|slack\.com|jira\.|linear\.app|figma\.com|docs\.google\.com|sheets\.google\.com|trello\.com|asana\.com|calendar\.google\.com|outlook\.(com|office\.com))\b/;
   const ENTERTAIN = /\b(netflix\.com|twitch\.tv|spotify\.com|soundcloud\.com|9gag\.com|imgur\.com|primevideo\.com|disneyplus\.com|hulu\.com)\b/;
 
-  if (SOCIAL.test(domain))    return "social media";
-  if (NEWS.test(domain))      return "news";
+  if (SOCIAL.test(domain)) return "social media";
+  if (NEWS.test(domain)) return "news";
   if (ENTERTAIN.test(domain)) return "entertainment";
-  if (PROD.test(domain))      return "productivity";
-  if (LEARN.test(domain))     return "learning";
+  if (PROD.test(domain)) return "productivity";
+  if (LEARN.test(domain)) return "learning";
 
   if (/tutorial|course|lecture|documentation|how[ -]to|explained?|guide|learn\b/.test(text)) return "learning";
   if (/breaking news|headlines|politics|report\b/.test(text)) return "news";
@@ -62,69 +81,39 @@ function classifyLocally(url, title) {
   return "other";
 }
 
-// ─── Gemini categorization ───────────────────────────────────────────────────
+// Server-side categorization via Netlify Function.
 async function classifyWithGemini(url, title) {
   try {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: `Classify this website into exactly one category.
-URL: ${url}
-Title: ${title}
-
-Categories: learning, entertainment, social media, productivity, news, other
-
-Rules:
-- "learning" = tutorials, courses, documentation, educational videos, Wikipedia
-- "entertainment" = YouTube (non-educational), Netflix, gaming, memes
-- "social media" = Twitter/X, Instagram, Reddit, Facebook, TikTok, LinkedIn
-- "productivity" = email, coding, Google Docs, project management tools
-- "news" = news articles, journalism, blogs about current events
-- "other" = anything that doesn't fit above
-
-Reply with only the category word, nothing else.`,
-                },
-              ],
-            },
-          ],
-          generationConfig: {
-            temperature: 0,
-            maxOutputTokens: 1024,
-          },
-        }),
-      },
-    );
+    const res = await fetch(`${getApiBaseUrl()}/api/classify`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url, title }),
+    });
 
     const data = await res.json();
-    // gemini-2.5-flash is a thinking model: parts[0] is reasoning, the actual
-    // answer is in the part without thought:true. Fall back to last part.
-    const parts = data?.candidates?.[0]?.content?.parts ?? [];
-    const answerPart = parts.find((p) => !p.thought) ?? parts[parts.length - 1];
-    const raw = (answerPart?.text ?? "").trim().toLowerCase();
-    const match = VALID_CATEGORIES.find((c) => raw.includes(c));
+
+    if (!res.ok) {
+      throw new Error(data?.error || `Classifier error ${res.status}`);
+    }
+
+    const match = VALID_CATEGORIES.find((item) => item === data?.category);
     return match ?? "other";
   } catch (err) {
-    console.warn("Gemini classification failed, using local fallback:", err);
+    console.warn("Remote classification failed, using local fallback:", err);
     return classifyLocally(url, title);
   }
 }
 
-// ─── Create event in Supabase, returns the new event's id ───────────────────
+// Create event in Supabase, returns the new event's id
 async function createEvent(tab) {
   const url = tab.url;
   if (
     !url ||
     url.startsWith("chrome://") ||
     url.startsWith("chrome-extension://")
-  )
+  ) {
     return null;
+  }
 
   let domain = "";
   try {
@@ -146,7 +135,7 @@ async function createEvent(tab) {
     body: JSON.stringify({
       url,
       title: tab.title,
-      category: "uncategorized", // placeholder — Gemini will update this shortly
+      category: "uncategorized",
       duration: 0,
       domain,
       user_id: session.user?.id,
@@ -157,7 +146,6 @@ async function createEvent(tab) {
   const [created] = await res.json();
   console.log("Event created:", created);
 
-  // Classify in the background — don't await so tab tracking isn't delayed
   if (created?.id) {
     classifyWithGemini(url, tab.title).then((category) => {
       patchEventCategory(created.id, category, session.access_token);
@@ -167,7 +155,7 @@ async function createEvent(tab) {
   return created?.id ?? null;
 }
 
-// ─── Patch category once Gemini responds ─────────────────────────────────────
+// Patch category once Gemini responds
 async function patchEventCategory(eventId, category, token) {
   await fetch(`${SUPABASE_URL}/rest/v1/events?id=eq.${eventId}`, {
     method: "PATCH",
@@ -178,10 +166,10 @@ async function patchEventCategory(eventId, category, token) {
     },
     body: JSON.stringify({ category }),
   });
-  console.log(`Category set → ${category} (event ${eventId})`);
+  console.log(`Category set -> ${category} (event ${eventId})`);
 }
 
-// ─── Patch duration + ended_at on an existing event ─────────────────────────
+// Patch duration + ended_at on an existing event
 async function finalizeEvent(tabId) {
   if (!activeStartTime || !tabEventMap[tabId]) return;
 
@@ -205,7 +193,7 @@ async function finalizeEvent(tabId) {
   console.log(`Finalized tab ${tabId}: ${duration}s`);
 }
 
-// ─── Tab finishes loading ────────────────────────────────────────────────────
+// Tab finishes loading
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   if (changeInfo.status !== "complete" || !tab.url) return;
 
@@ -223,7 +211,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   }
 });
 
-// ─── User switches tabs ──────────────────────────────────────────────────────
+// User switches tabs
 chrome.tabs.onActivated.addListener(async ({ tabId }) => {
   if (activeTabId !== null && activeTabId !== tabId) {
     await finalizeEvent(activeTabId);
@@ -232,7 +220,7 @@ chrome.tabs.onActivated.addListener(async ({ tabId }) => {
   activeStartTime = Date.now();
 });
 
-// ─── Chrome window gains/loses focus ────────────────────────────────────────
+// Chrome window gains/loses focus
 chrome.windows.onFocusChanged.addListener(async (windowId) => {
   if (windowId === chrome.windows.WINDOW_ID_NONE) {
     if (activeTabId !== null) {

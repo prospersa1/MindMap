@@ -1,0 +1,25 @@
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/dashboard"
+  to = "/dashboard/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/ar"
+  to = "/ar/"
+  status = 301
+  force = true
+
+[[headers]]
+  for = "/ar/*"
+  [headers.values]
+    Permissions-Policy = "camera=(self)"
