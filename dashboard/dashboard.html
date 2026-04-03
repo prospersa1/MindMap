@@ -49,13 +49,17 @@
     header {
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      justify-content: flex-end;
       margin-bottom: 52px;
       flex-wrap: wrap;
       gap: 12px;
     }
 
     .logo {
+      position: fixed;
+      top: 24px;
+      left: 24px;
+      z-index: 100;
       font-size: 17px;
       font-weight: 600;
       letter-spacing: 0.01em;
@@ -63,7 +67,11 @@
       align-items: center;
       gap: 10px;
       color: rgba(240, 240, 250, 0.75);
+      text-decoration: none;
+      transition: opacity 0.18s ease;
     }
+
+    .logo:hover { opacity: 0.75; }
 
     .logo-dot {
       width: 7px;
@@ -473,13 +481,15 @@
   </style>
 </head>
 <body>
+
+<a class="logo" href="../index.html">
+  <div class="logo-dot"></div>
+  MindMap
+</a>
+
 <div id="app">
 
   <header>
-    <div class="logo">
-      <div class="logo-dot"></div>
-      MindMap
-    </div>
     <div class="header-right">
       <div class="subtitle">Brain Nutrition Dashboard</div>
       <div id="last-updated"></div>

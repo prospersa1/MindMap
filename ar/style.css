@@ -73,6 +73,38 @@ body {
 #start-btn:hover { opacity: 0.85; }
 #start-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
+#home-btn {
+  position: fixed;
+  top: 24px;
+  left: 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: rgba(240,240,250,0.75);
+  text-decoration: none;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition: opacity 0.18s ease;
+  z-index: 30;
+}
+
+#home-btn:hover { opacity: 0.75; }
+
+.home-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #1D9E75;
+  box-shadow: 0 0 10px #1D9E75;
+  animation: pulse-dot 3s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
 #error-msg {
   display: none;
   color: #ff6b6b;

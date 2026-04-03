@@ -4,9 +4,14 @@
   "version": "1.0",
   "permissions": ["tabs", "storage", "windows"],
   "host_permissions": [
-    "https://generativelanguage.googleapis.com/*"
+    "https://generativelanguage.googleapis.com/*",
+    "https://api.unsplash.com/*",
+    "https://sagbrkjfdqxqndrfekkp.supabase.co/*"
   ],
   "background": {
     "service_worker": "background.js"
+  },
+  "chrome_url_overrides": {
+    "newtab": "newtab.html"
   }
 }

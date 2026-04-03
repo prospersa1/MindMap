@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>New Tab</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      height: 100vh;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: #fff;
+      background: #0a0a0f;
+    }
+
+    /* ── Background ──────────────────────────────────── */
+    #bg {
+      position: fixed;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+      transition: opacity 0.8s ease;
+      opacity: 0;
+    }
+    #bg.loaded { opacity: 1; }
+
+    /* Dark gradient so text is always readable */
+    #bg::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(to bottom,
+          rgba(0,0,0,0.35) 0%,
+          rgba(0,0,0,0.1) 40%,
+          rgba(0,0,0,0.1) 60%,
+          rgba(0,0,0,0.5) 100%);
+    }
+
+    /* ── Layout ──────────────────────────────────────── */
+    #content {
+      position: relative;
+      z-index: 10;
+      height: 100vh;
+      display: grid;
+      grid-template-rows: 1fr auto;
+      padding: 32px 40px;
+    }
+
+    /* ── Clock + greeting ────────────────────────────── */
+    .center {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      text-align: center;
+    }
+
+    #clock {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.18em;
+      font-size: clamp(5rem, 14vw, 9rem);
+      font-weight: 200;
+      letter-spacing: -0.04em;
+      line-height: 1;
+      text-shadow: 0 2px 24px rgba(0,0,0,0.4);
+    }
+
+    #time-digits {
+      line-height: 1;
+    }
+
+    #ampm {
+      font-size: 0.18em;
+      font-weight: 300;
+      letter-spacing: 0.08em;
+      opacity: 0.45;
+      margin-top: 0.18em;
+      line-height: 1;
+      align-self: flex-start;
+    }
+
+    #greeting {
+      font-size: 1.5rem;
+      font-weight: 400;
+      opacity: 0.9;
+      text-shadow: 0 1px 8px rgba(0,0,0,0.5);
+    }
+
+    /* ── Bottom row ──────────────────────────────────── */
+    .bottom {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+    }
+
+    /* ── Bottom widgets ──────────────────────────────── */
+    .widgets {
+      display: flex;
+      gap: 12px;
+      align-items: flex-end;
+    }
+
+    .widget {
+      background: rgba(0,0,0,0.45);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 16px;
+      padding: 16px 22px;
+      min-width: 200px;
+      opacity: 0;
+      transition: opacity 0.4s ease, border-color 0.2s ease, transform 0.2s ease;
+      text-decoration: none;
+      color: #fff;
+      display: block;
+      cursor: pointer;
+    }
+    .widget.loaded { opacity: 1; }
+    .widget:hover {
+      border-color: rgba(255,255,255,0.3);
+      transform: translateY(-2px);
+    }
+
+    .widget-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      opacity: 0.55;
+      margin-bottom: 8px;
+    }
+
+    .widget-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .score-number {
+      font-size: 2.4rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .score-right {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .state-name {
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+
+    .state-sub {
+      font-size: 0.75rem;
+      opacity: 0.6;
+    }
+
+    /* ── AR widget ───────────────────────────────────── */
+    .ar-icon {
+      font-size: 2.4rem;
+      line-height: 1;
+    }
+
+    .ar-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #00ffcc;
+    }
+
+    .ar-sub {
+      font-size: 0.75rem;
+      opacity: 0.6;
+    }
+
+    /* ── Photo credit ────────────────────────────────── */
+    #photo-credit {
+      font-size: 0.72rem;
+      opacity: 0.5;
+      text-align: right;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+      transition: opacity 0.2s;
+    }
+    #photo-credit:hover { opacity: 0.9; }
+    #photo-credit a { color: #fff; text-decoration: none; }
+    #photo-credit a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+  <div id="bg"></div>
+
+  <div id="content">
+    <div class="center">
+      <div id="clock"><span id="time-digits">--:--</span><span id="ampm"></span></div>
+      <div id="greeting">Good morning</div>
+    </div>
+
+    <div class="bottom">
+      <div class="widgets">
+        <a id="brain-widget" class="widget">
+          <div class="widget-label">Brain Health · 7 days</div>
+          <div class="widget-row">
+            <div class="score-number" id="score-num">--</div>
+            <div class="score-right">
+              <div class="state-name" id="state-name">Loading…</div>
+              <div class="state-sub" id="state-sub"></div>
+            </div>
+          </div>
+        </a>
+
+        <a id="ar-widget" class="widget loaded">
+          <div class="widget-label">AR Experience</div>
+          <div class="widget-row">
+            <div class="ar-icon">🧠</div>
+            <div class="score-right">
+              <div class="ar-title">View AR Brain</div>
+              <div class="ar-sub">Open on your phone</div>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <div id="photo-credit"></div>
+    </div>
+  </div>
+
+  <script src="newtab.js"></script>
+
+</body>
+</html>

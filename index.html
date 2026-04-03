@@ -46,13 +46,31 @@
       border-bottom: 1px solid rgba(116, 160, 188, 0.12);
     }
 
-    .eyebrow {
-      display: inline-block;
-      font: 600 12px/1.2 system-ui, sans-serif;
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
-      color: var(--accent);
-      margin-bottom: 18px;
+    .site-logo {
+      position: fixed;
+      top: 24px;
+      left: 24px;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font: 600 17px/1 system-ui, sans-serif;
+      letter-spacing: 0.01em;
+      color: rgba(240, 240, 250, 0.75);
+    }
+
+    .site-logo-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #1D9E75;
+      box-shadow: 0 0 10px #1D9E75;
+      animation: pulse-dot 3s ease-in-out infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
     }
 
     h1 {
@@ -71,7 +89,7 @@
 
     .grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(2, 1fr);
       gap: 18px;
       padding: 28px;
     }
@@ -140,36 +158,24 @@
       border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    .note {
-      padding: 0 28px 28px;
-      color: var(--muted);
-      font: 500 0.92rem/1.7 system-ui, sans-serif;
-    }
-
-    code {
-      font-family: Consolas, monospace;
-      color: var(--text);
-      background: rgba(255, 255, 255, 0.06);
-      padding: 2px 7px;
-      border-radius: 999px;
-    }
-
     @media (max-width: 860px) {
       .grid { grid-template-columns: 1fr; }
       .hero { padding: 42px 22px 26px; }
-      .grid, .note { padding-left: 22px; padding-right: 22px; }
+      .grid { padding-left: 22px; padding-right: 22px; }
       .card { min-height: 0; }
     }
   </style>
 </head>
 <body>
+  <div class="site-logo">
+    <div class="site-logo-dot"></div>
+    MindMap
+  </div>
   <main>
     <section class="hero">
-      <div class="eyebrow">MindMap</div>
       <h1>Your attention, mapped.</h1>
       <p>
-        Dashboard and AR experience for MindMap. Configure The browser extension
-        which runs separately and sends the browsing data that powers both views.
+        Visualize your brain health based on how you spend your time online.
       </p>
     </section>
 
@@ -195,12 +201,7 @@
           <a class="button primary" href="ar/ar.html">Open AR</a>
         </div>
       </article>
-
-
-
-    <div class="note">
-      Netlify does not host the Chrome extension runtime. Load the extension separately in Chrome.
-    </div>
+    </section>
   </main>
 </body>
 </html>
